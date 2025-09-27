@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Beekeeping App</title>
 
-  <!-- Tailwind (for styles). If it fails, we still show readable fallback styles. -->
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <!-- Tailwind for styling -->
+  <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
 
-  <!-- Fallback base styles so text is visible even if Tailwind is blocked -->
   <style>
     html,body,#root{height:100%}
     body{background:#0a0a0a;color:#fef3c7;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif}
@@ -17,12 +16,51 @@
   </style>
 </head>
 <body>
-  <!-- Visible message until React mounts (and if something fails, we update this) -->
   <div id="root">
     <div class="container">
       <div class="fallback-border">
         <b>Loading Beekeeping App…</b>
         <div style="opacity:.7;font-size:.9rem;margin-top:.25rem">
-        
+          If this stays here, a script failed to load. We’ll show the exact error below.
+        </div>
+        <pre id="fatal" style="margin-top:.5rem;color:#fecaca;white-space:pre-wrap"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- React UMD + Babel (add crossorigin so real errors surface) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+
+  <!-- Error surface with real stack when available -->
+  <script>
+    (function(){
+      const outEl = document.getElementById('fatal');
+      const out = (msg) => { if (outEl) outEl.textContent = String(msg || ''); };
+      window.addEventListener('error', (e) => {
+        const msg = (e && e.message) || 'Unknown error';
+        const stack = e && e.error && e.error.stack ? '\n' + e.error.stack : '';
+        out(msg + stack);
+      });
+      setTimeout(() => {
+        if (!window.React || !window.ReactDOM || !window.Babel) {
+          out('CDN scripts failed to load (network/corporate filter?). The app cannot start.');
+        }
+      }, 1500);
+    })();
+  </script>
+
+  <!-- Your app (JSX compiled in-browser).
+       Add proposal plugins so ?? and ?. work everywhere. -->
+  <script
+    type="text/babel"
+    data-presets="env,react"
+    data-plugins="proposal-optional-chaining,proposal-nullish-coalescing-operator"
+  >
+    /* paste the full Beekeeping App code here (the version I provided)
+       from:  const { useEffect, useMemo, useRef, useState } = React; 
+       down to: ReactDOM.createRoot(...).render(<AppShell />); */
+  </script>
 </body>
 </html>
