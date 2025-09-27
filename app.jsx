@@ -1,5 +1,15 @@
 /* global React, ReactDOM */
-const { useEffect, useMemo, useRef, useState } = React;
+- import React, { useEffect, useMemo, useRef, useState } from "react";
++ /* global React, ReactDOM */
++ const { useEffect, useMemo, useRef, useState } = React;
+
+- export default function BeekeepingApp(){
++ function BeekeepingApp(){
+    // ... (rest of your component unchanged)
+  }
+
++ // make it visible to index.html’s mount script
++ if (typeof window !== 'undefined') { window.BeekeepingApp = BeekeepingApp; }
 
 /**
  * Beekeeping App — Yellow & Black (Previewable)
