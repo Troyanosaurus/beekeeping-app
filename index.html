@@ -1,85 +1,64 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Beekeeping App</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Beekeeping App</title>
+    <meta name="description" content="Beekeeping App — yellow & black UI, works on GitHub Pages without a bundler." />
+    <meta name="theme-color" content="#facc15" />
 
-  <!-- Tailwind for styling -->
-  <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+    <!-- Tailwind (Play CDN) so the utility classes in app.jsx work -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-black text-yellow-200">
+    <div class="mx-auto max-w-6xl p-4">
+      <header class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-semibold text-yellow-300">Beekeeping App</h1>
+        <a class="text-xs underline opacity-70 hover:opacity-100" href="https://github.com/troyanosaurus/beekeeping-app" rel="noopener">Repo</a>
+      </header>
 
-  <style>
-    html,body,#root{height:100%}
-    body{background:#0a0a0a;color:#fef3c7;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif}
-    .container{max-width:1200px;margin:0 auto;padding:24px}
-    .fallback-border{border:1px solid rgba(234,179,8,.25);border-radius:16px;padding:16px}
-    a.button { display:inline-block; padding:.5rem .75rem; border-radius:.75rem; border:1px solid rgba(234,179,8,.4); color:#fde68a; background:rgba(0,0,0,.4); }
-  </style>
-</head>
-<body>
-  <!-- Loading / error surface -->
-  <div id="root">
-    <div class="container">
-      <div class="fallback-border">
-        <b>Loading Beekeeping App…</b>
-        <div style="opacity:.7;font-size:.9rem;margin-top:.25rem">
-          If this stays here, a script failed to load. We’ll show the exact error below.
-        </div>
-        <pre id="fatal" style="margin-top:.5rem;color:#fecaca;white-space:pre-wrap"></pre>
-        <div style="margin-top:.5rem;opacity:.8">
-          If you’re offline or behind a filter, download a portable build instead:
-          <a class="button" href="https://unpkg.com/@babel/standalone/babel.min.js">Babel</a>
-          <a class="button" href="https://unpkg.com/react@18/umd/react.production.min.js">React</a>
-          <a class="button" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">ReactDOM</a>
+      <!-- Mount target -->
+      <div id="root" class="min-h-[40vh] rounded-2xl border border-yellow-500/20 bg-black/40 grid place-items-center">
+        <div class="p-6 text-center">
+          <div class="mb-2 animate-pulse">Loading Beekeeping App…</div>
+          <div class="text-xs opacity-70">If this stays here, a script failed to load. We’ll show the error below.</div>
         </div>
       </div>
+
+      <!-- Error output (if any) -->
+      <pre id="err" class="mt-3 text-xs text-red-300 whitespace-pre-wrap"></pre>
     </div>
-  </div>
 
-  <!-- React UMD + Babel (crossorigin gives real errors) -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
+    <!-- React + Babel UMD builds (no bundler required) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
 
-  <!-- Error surface with real stack when available -->
-  <script>
-    (function(){
-      const outEl = document.getElementById('fatal');
-      const out = (msg) => { if (outEl) outEl.textContent = String(msg || ''); };
-      window.addEventListener('error', (e) => {
-        const msg = (e && e.message) || 'Unknown error';
-        const stack = e && e.error && e.error.stack ? '\n' + e.error.stack : '';
-        out(msg + stack);
-      });
-      setTimeout(() => {
-        if (!window.React || !window.ReactDOM || !window.Babel) {
-          out('CDN scripts failed to load (network/corporate filter?). The app cannot start.');
-        }
-      }, 1500);
-    })();
-  </script>
+    <!-- Your app code (JSX, but NO import/export). Make sure this file exists at the repo root. -->
+    <script
+      type="text/babel"
+      data-presets="env,react"
+      data-plugins="proposal-nullish-coalescing-operator,proposal-optional-chaining"
+      src="app.jsx"
+    ></script>
 
-  <!-- Load your app code from a separate file (no imports/exports needed) -->
-  <script
-    type="text/babel"
-    data-presets="env,react"
-    data-plugins="proposal-optional-chaining,proposal-nullish-coalescing-operator"
-    src="app.jsx"
-  ></script>
+    <!-- Mount the app (kept tiny and robust) -->
+    <script type="text/babel" data-presets="env,react">
+      const out = document.getElementById('err');
+      function showErr(e){ try { out.textContent = String(e && (e.stack || e.message || e)) } catch { /* noop */ } }
+      window.addEventListener('error', (ev)=> showErr(ev.error||ev.message));
+      window.addEventListener('unhandledrejection', (ev)=> showErr(ev.reason||ev));
 
- 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
-
-<script type="text/babel" data-presets="env,react"
-        data-plugins="proposal-optional-chaining,proposal-nullish-coalescing-operator"
-        src="app.jsx"></script>
-
-<script type="text/babel" data-presets="env,react">
-  ReactDOM.createRoot(document.getElementById('root')).render(<BeekeepingApp />);
-</script>
-
-</body>
+      try {
+        if (!window.BeekeepingApp) throw new Error('BeekeepingApp is not defined. Did app.jsx load?');
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(window.BeekeepingApp));
+      } catch (e) {
+        showErr(e);
+      }
+    </script>
+  </body>
 </html>
+
 
