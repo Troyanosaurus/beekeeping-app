@@ -347,7 +347,6 @@
         const jsonFileRef = useRef(null); const csvFileRef = useRef(null);
         const [importMsg,setImportMsg] = useState('');
 
-        // hoist helpers into props
         const api = {
           hives, setHives, tasks, setTasks, inventory, setInventory,
           addTask:(t)=>{ const id=t.id || `T-${Math.random().toString(36).slice(2,7)}`; setTasks(ts=>[{...t,id,status:'To Do'},...ts]); },
@@ -363,7 +362,6 @@
           showDone, setShowDone, jsonFileRef, csvFileRef, importMsg, setImportMsg, tab, setTab
         };
 
-        // persist
         useEffect(()=>{ safeStorage.set('bk.hives', api.hives); }, [api.hives]);
         useEffect(()=>{ safeStorage.set('bk.tasks', api.tasks); }, [api.tasks]);
         useEffect(()=>{ safeStorage.set('bk.inventory', api.inventory); }, [api.inventory]);
