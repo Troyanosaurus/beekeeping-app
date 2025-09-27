@@ -67,10 +67,19 @@
     src="app.jsx"
   ></script>
 
-  <!-- Mount -->
-  <script type="text/babel" data-presets="env,react">
-    ReactDOM.createRoot(document.getElementById('root')).render(<BeekeepingApp />);
-  </script>
+ 
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+
+<script type="text/babel" data-presets="env,react"
+        data-plugins="proposal-optional-chaining,proposal-nullish-coalescing-operator"
+        src="app.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+  ReactDOM.createRoot(document.getElementById('root')).render(<BeekeepingApp />);
+</script>
+
 </body>
 </html>
 
