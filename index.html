@@ -319,4 +319,50 @@
       // ------------------- Modals (Add/Edit Apiary)
       function FieldError({ msg }){ return msg ? <div className="text-xs text-red-300 mt-0.5">{msg}</div> : null; }
       function NewApiaryModal({ show, onClose, onCreate }){ const [form,setForm]=useState({ name:"", strength:"Moderate", numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, notes:"" }); const { valid, errors }=validateApiary(form); if(!show) return null; return (<div className="fixed inset-0 bg-black/70 grid place-items-center p-4"><div className="w-full max-w-lg rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4"><div className="text-yellow-200 font-semibold mb-2">Add Apiary</div><div className="grid grid-cols-2 gap-2"><label className="col-span-2 text-sm">Name<Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} /><FieldError msg={errors.name} /></label><label className="text-sm">Queenless Hives<Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} /><FieldError msg={errors.queenlessHives} /></label><label className="text-sm">Strength<select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100"><option>Weak</option><option>Moderate</option><option>Strong</option></select></label><label className="text-sm col-span-2">Number of Hives<Input type="number" min={0} value={form.numHives} onChange={(e)=>setForm({ ...form, numHives: toInt(e.target.value) })} /><FieldError msg={errors.numHives} /></label><label className="text-sm">Single Hives<Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} /><FieldError msg={errors.singleHives} /></label><label className="text-sm">Double Hives<Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} /><FieldError msg={errors.doubleHives} /></label><label className="text-sm">Nucs<Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} /></label><label className="col-span-2 text-sm">Notes<Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} /></label></div><div className="flex justify-end gap-2 mt-3"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!valid} onClick={()=>{ onCreate(form); onClose(); }}>Create Apiary</Button></div></div></div>); }
-      function EditApiaryModal({ current, onClose, onSave }){ const h=current; const [form,setForm]=useState(()=> (h ? { nucs:0, queenlessHives:0, ...h } : null)); const [errs,setErrs]=useState({}); useEffect(()=>{ if(h){ setForm({ ...h }); setErrs({}); } }, [h]); if(!h || !form) return null; const handleSave=()=>{ const { valid, errors, values }=validateApiary(form); setErrs(errors); if(!valid) return; onSave(h.id,{ ...values, lastInspection: todayISO() }); onClose(); }; const { valid }=validateApiary(form); return (<d
+      function EditApiaryModal({ current, onClose, onSave }){ const h=current; const [form,setForm]=useState(()=> (h ? { nucs:0, queenlessHives:0, ...h } : null)); const [errs,setErrs]=useState({}); useEffect(()=>{ if(h){ setForm({ ...h }); setErrs({}); } }, [h]); if(!h || !form) return null; const handleSave=()=>{ const { valid, errors, values }=validateApiary(form); setErrs(errors); if(!valid) return; onSave(h.id,{ ...values, lastInspection: todayISO() }); onClose(); }; const { valid }=validateApiary(form); return (<div className="fixed inset-0 bg-black/70 grid place-items-center p-4"><div className="w-full max-w-xl rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4"><div className="text-yellow-200 font-semibold mb-2">Edit {h.name}</div><div className="grid grid-cols-2 gap-2"><label className="col-span-2 text-sm">Name<Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} /><FieldError msg={errs.name} /></label><label className="text-sm">Queenless Hives<Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} /><FieldError msg={errs.queenlessHives} /></label><label className="text-sm">Strength<select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100"><option>Weak</option><option>Moderate</option><option>Strong</option></select></label><label className="text-sm col-span-2">Number of Hives<Input type="number" min={0} value={form.numHives} onChange={(e)=>setForm({ ...form, numHives: toInt(e.target.value) })} /><FieldError msg={errs.numHives} /></label><label className="text-sm">Single Hives<Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} /><FieldError msg={errs.singleHives} /></label><label className="text-sm">Double Hives<Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} /><FieldError msg={errs.doubleHives} /></label><label className="text-sm">Nucs<Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} /></label><label className="col-span-2 text-sm">Notes<Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} /></label></div><div className="flex justify-end gap-2 mt-3"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={handleSave} disabled={!valid}>Save</Button></div></div></div>); }
+
+      // ------------------- Render
+      return (
+        <div className="p-6 text-yellow-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="inline-flex gap-2">{['dashboard','apiaries','settings'].map(k => (<button key={k} onClick={()=>setTab(k)} className={`px-3 py-2 rounded-xl ${tab===k? 'bg-yellow-500 text-black':'bg-black/40'}`}>{k[0].toUpperCase()+k.slice(1)}</button>))}</div>
+            <div className="flex items-center gap-2">
+              <input type="file" accept="application/json" ref={jsonFileRef} onChange={doImport} className="hidden" />
+              <input type="file" accept=".csv,text/csv" ref={csvFileRef} onChange={doImportCSV} className="hidden" />
+              <Button variant="outline" onClick={()=>jsonFileRef.current?.click()}>Import (JSON)</Button>
+              <Button variant="outline" onClick={()=>csvFileRef.current?.click()}>Import (CSV)</Button>
+              <Button onClick={doExport}>Export (JSON)</Button>
+              <Button onClick={doExportCSV}>Export (CSV)</Button>
+              <Button onClick={()=>setShowNewHive(true)}>+ Add Apiary</Button>
+            </div>
+          </div>
+          {importMsg && <div className="mb-3 text-xs opacity-80">{importMsg}</div>}
+          {tab==='dashboard' && <Dashboard />}
+          {tab==='apiaries' && <Apiaries />}
+          {tab==='settings' && (
+            <Card><CardHeader><CardTitle>Settings</CardTitle></CardHeader><CardContent className="text-sm opacity-80">No extra settings yet.</CardContent></Card>
+          )}
+          <NewApiaryModal show={showNewHive} onClose={()=>setShowNewHive(false)} onCreate={(form)=>addHive(form)} />
+          <EditApiaryModal current={editing} onClose={()=>setEditing(null)} onSave={(id,patch)=>updateHive(id,patch)} />
+        </div>
+      );
+    }
+
+    // --------------------------------------------------------------- Seeds & Boot
+    const seedHives=[
+      { id:"A-001", name:"Sunflower-1", queenStatus:"Laying", strength:"Strong",   numHives:5, singleHives:3, doubleHives:2, queenlessHives:0, nucs:0, lastInspection:"2025-08-19" },
+      { id:"A-002", name:"Clover-2",    queenStatus:"Queenless", strength:"Weak",  numHives:2, singleHives:2, doubleHives:0, queenlessHives:2, nucs:0, lastInspection:"2025-08-28" },
+      { id:"A-003", name:"Acacia-3",    queenStatus:"Laying",    strength:"Moderate", numHives:4, singleHives:1, doubleHives:3, queenlessHives:0, nucs:0, lastInspection:"2025-08-23" },
+    ];
+    const seedTasks=[
+      { id:"T-001", title:"Oxalic vapor treatment", hiveId:"A-003", due:todayISO(), status:"To Do", priority:"High" },
+      { id:"T-002", title:"Add equipment",          hiveId:"A-001", due:todayISO(), status:"To Do", priority:"Medium" },
+      { id:"T-003", title:"Introduce queen",        hiveId:"A-002", due:todayISO(), status:"To Do", priority:"High" },
+    ];
+    const seedInventory={ supers:12, boxes:120, feeders:6, syrupL:30 };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<BeekeepingApp />);
+  </script>
+</body>
+</html>
