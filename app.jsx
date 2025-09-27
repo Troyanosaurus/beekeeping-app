@@ -1,15 +1,5 @@
 /* global React, ReactDOM */
-- import React, { useEffect, useMemo, useRef, useState } from "react";
-+ /* global React, ReactDOM */
-+ const { useEffect, useMemo, useRef, useState } = React;
-
-- export default function BeekeepingApp(){
-+ function BeekeepingApp(){
-    // ... (rest of your component unchanged)
-  }
-
-+ // make it visible to index.html’s mount script
-+ if (typeof window !== 'undefined') { window.BeekeepingApp = BeekeepingApp; }
+const { useEffect, useMemo, useRef, useState } = React;
 
 /**
  * Beekeeping App — Yellow & Black (Previewable)
@@ -115,10 +105,13 @@ function CalendarPopover({ valueISO, onSelect, onClose }){
         <div className="text-sm font-semibold text-yellow-200">{monthName(m)} {y}</div>
         <Button variant="outline" onClick={()=>goto(1)}>›</Button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-[11px] text-yellow-300/80 px-1 mt-1">{["S","M","T","W","T","F","S"].map(d=><div key={d} className="text-center">{d}</div>)}</div>
+      <div className="grid grid-cols-7 gap-1 text-[11px] text-yellow-300/80 px-1 mt-1">{"SMTWTFS".split("").map(d=> <div key={d} className="text-center">{d}</div>)}</div>
       <div className="grid grid-cols-7 gap-1 p-1">
         {blanks.map((_,i)=><div key={`b${i}`} />)}
-        {dates.map(d=> (<button key={d} onClick={()=>{ onSelect?.(ymdToISO(y,m,d)); onClose?.(); }} className={`h-8 rounded-lg text-sm flex items-center justify-center border border-transparent hover:border-yellow-500/40 ${isSelected(d)?'bg-yellow-500 text-black': isToday(d)?'ring-1 ring-yellow-400':'bg-black/40 text-yellow-100'}`}>{d}</button>))}
+        {dates.map(d=> (
+          <button key={d} onClick={()=>{ onSelect?.(ymdToISO(y,m,d)); onClose?.(); }}
+            className={`h-8 rounded-lg text-sm flex items-center justify-center border border-transparent hover:border-yellow-500/40 ${isSelected(d)?'bg-yellow-500 text-black': isToday(d)?'ring-1 ring-yellow-400':'bg-black/40 text-yellow-100'}`}>{d}</button>
+        ))}
       </div>
       <div className="flex items-center justify-end gap-2 px-1 pb-1">
         <Button variant="outline" onClick={()=>{ const t=todayISO(); setY(today.getFullYear()); setM(today.getMonth()+1); onSelect?.(t); onClose?.(); }}>Today</Button>
@@ -348,3 +341,6 @@ function BeekeepingApp(){
     </div>
   );
 }
+
+// Make it globally visible for index.html mount script
+if (typeof window !== 'undefined') { window.BeekeepingApp = BeekeepingApp; }
