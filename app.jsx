@@ -1,5 +1,4 @@
-/* global React, ReactDOM */
-const { useEffect, useMemo, useRef, useState } = React;
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Beekeeping App — Yellow & Black (Previewable)
@@ -62,14 +61,14 @@ const coerceInventory = (inv)=>({ supers:toInt(inv?.supers), boxes:toInt(inv?.bo
 
 // --------------------------------------------------------------- Seed Data
 const seedHives=[
-  { id:"A-001", name:"Dwaight", queenStatus:"Laying", strength:"Strong",   numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, lastInspection:"2025-08-19" },
-  { id:"A-002", name:"Andy",    queenStatus:"Queenless", strength:"Weak",  numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, lastInspection:"2025-08-28" },
-  { id:"A-003", name:"Bud",    queenStatus:"Laying",    strength:"Moderate", numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, lastInspection:"2025-08-23" },
+  { id:"A-001", name:"Sunflower-1", queenStatus:"Laying", strength:"Strong",   numHives:5, singleHives:3, doubleHives:2, queenlessHives:0, nucs:0, lastInspection:"2025-08-19" },
+  { id:"A-002", name:"Clover-2",    queenStatus:"Queenless", strength:"Weak",     numHives:2, singleHives:2, doubleHives:0, queenlessHives:2, nucs:0, lastInspection:"2025-08-28" },
+  { id:"A-003", name:"Acacia-3",     queenStatus:"Laying",    strength:"Moderate", numHives:4, singleHives:1, doubleHives:3, queenlessHives:0, nucs:0, lastInspection:"2025-08-23" },
 ];
 const seedTasks=[
   { id:"T-001", title:"Oxalic vapor treatment", hiveId:"A-003", due:todayISO(), status:"To Do", priority:"High" },
   { id:"T-002", title:"Add equipment",          hiveId:"A-001", due:todayISO(), status:"To Do", priority:"Medium" },
-  { id:"T-003", title:"Introduce queen",        hiveId:"A-002", due:todayISO(), status:"To Do", priority:"High" },
+  { id:"T-003", title:"Introduce queen",         hiveId:"A-002", due:todayISO(), status:"To Do", priority:"High" },
 ];
 const seedInventory={ supers:12, boxes:120, feeders:6, syrupL:30 };
 
@@ -122,7 +121,7 @@ function CalendarPopover({ valueISO, onSelect, onClose }){
 }
 
 // ================================================================= App
-function BeekeepingApp(){
+export default function BeekeepingApp(){
   // App State
   const [tab,setTab] = useState('dashboard');
   const [hives,setHives] = useState(()=>safeStorage.get('bk.hives', seedHives));
@@ -154,7 +153,7 @@ function BeekeepingApp(){
   // Task helpers
   function addTask(t){ const id = t.id || `T-${Math.random().toString(36).slice(2,7)}`; setTasks(ts=>[{...t,id,status:'To Do'},...ts]); }
   function deleteTask(id){ setTasks(ts=>ts.filter(t=>t.id!==id)); }
-  function setTaskStatus(id,status){ setTasks(ts=>ts.map(t=>t.id===id?{...t,status}:t)); }
+  function setTaskStatus(id,status){ setTasks(ts=>ts.map(t=>t.id===id?{...t,...{status}}:t)); }
   function updateTask(id,patch){ setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t)); }
 
   // Import/Export JSON
@@ -163,10 +162,10 @@ function BeekeepingApp(){
 
   // CSV Import/Export
   function doExportCSV(){ const apiaryRows=hives.map(h=>({ id:h.id, name:h.name, queenStatus:h.queenStatus, strength:h.strength, numHives:h.numHives, singleHives:h.singleHives, doubleHives:h.doubleHives, queenlessHives:h.queenlessHives??0, nucs:h.nucs??0, notes:h.notes||'', lastInspection:h.lastInspection||todayISO() })); downloadCSV(apiaryRows,'apiaries.csv'); const taskRows=tasks.map(t=>({ id:t.id, title:t.title, hiveId:t.hiveId, due:t.due, status:t.status, priority:t.priority })); downloadCSV(taskRows,'tasks.csv'); const invRow=[{ boxes:inventory.boxes??0, supers:inventory.supers??0, feeders:inventory.feeders??0, syrupL:inventory.syrupL??0 }]; downloadCSV(invRow,'inventory.csv'); }
-  async function doImportCSV(ev){ setImportMsg(''); try{ const file=ev.target.files?.[0]; if(!file) return; const rows=parseCSV(await readFileAsText(file)); if(!rows.length){ setImportMsg('CSV contains no rows.'); return; } const hdrs=Object.keys(rows[0]).map(s=>s.toLowerCase()); const has=(k)=>hdrs.includes(k); if(has('title')&&has('due')){ const next=rows.map(coerceTask); const byId=new Map(tasks.map(t=>[t.id,t])); const sig=(t)=>`${t.title}|${t.hiveId}|${t.due}`; const bySig=new Map(tasks.map(t=>[sig(t),t])); let count=0; next.forEach(n=>{ if(n.id&&byId.has(n.id)){ byId.set(n.id,{...byId.get(n.id),...n}); count++; } else if(bySig.has(sig(n))){ const e=bySig.get(sig(n)); byId.set(e.id,{...e,...n}); } else { const id=`T-${Math.random().toString(36).slice(2,7)}`; byId.set(id,{...n,id}); count++; } }); setTasks(Array.from(byId.values())); setImportMsg(`Imported/merged ${count} tasks from CSV.`); } else if(has('name')||has('numhives')||has('singlehives')||has('doublehives')){ const next=rows.map(coerceApiary); const byId=new Map(hives.map(h=>[h.id,h])); const byName=new Map(hives.map(h=>[h.name.toLowerCase(),h])); let count=0; next.forEach(n=>{ if(n.id&&byId.has(n.id)){ byId.set(n.id,{...byId.get(n.id),...n}); count++; } else if(n.name && byName.has(n.name.toLowerCase())){ const e=byName.get(n.name.toLowerCase()); byId.set(e.id,{...e,...n,id:e.id}); count++; } else { const id=`A-${String(byId.size+1).padStart(3,'0')}`; byId.set(id,{...n,id}); count++; } }); setHives(Array.from(byId.values())); setImportMsg(`Imported/merged ${count} apiaries from CSV.`); } else if(has('boxes')||has('supers')||has('feeders')||has('syrupl')){ const first=rows[0]||{}; const patch={ boxes:toInt(first.boxes), supers:toInt(first.supers), feeders:toInt(first.feeders), syrupL:toInt(first.syrupL) }; setInventory(prev=>({ ...prev, ...patch })); setImportMsg('Inventory updated from CSV.'); } else { setImportMsg('Unknown CSV format. Expected Apiaries, Tasks, or Inventory columns.'); } } catch { setImportMsg('Import failed: invalid CSV'); } finally { if(csvFileRef.current) csvFileRef.current.value=''; } }
+  async function doImportCSV(ev){ setImportMsg(''); try{ const file=ev.target.files?.[0]; if(!file) return; const rows=parseCSV(await readFileAsText(file)); if(!rows.length){ setImportMsg('CSV contains no rows.'); return; } const hdrs=Object.keys(rows[0]).map(s=>s.toLowerCase()); const has=(k)=>hdrs.includes(k); if(has('title')&&has('due')){ const next=rows.map(coerceTask); const byId=new Map(tasks.map(t=>[t.id,t])); const sig=(t)=>`${t.title}|${t.hiveId}|${t.due}`; const bySig=new Map(tasks.map(t=>[sig(t),t])); let count=0; next.forEach(n=>{ if(n.id&&byId.has(n.id)){ byId.set(n.id,{...byId.get(n.id),...n}); count++; } else if(bySig.has(sig(n))){ const e=bySig.get(sig(n)); byId.set(e.id,{...e,...n}); } else { const id=`T-${Math.random().toString(36).slice(2,7)}`; byId.set(id,{...n,id}); count++; } }); setTasks(Array.from(byId.values())); setImportMsg(`Imported/merged ${count} tasks from CSV.`); } else if(has('name')||has('numhives')||has('singlehives')||has('doublehives')){ const next=rows.map(coerceApiary); const byId=new Map(hives.map(h=>[h.id,h])); const byName=new Map(hives.map(h=>[h.name.toLowerCase(),h])); let count=0; next.forEach(n=>{ if(n.id&&byId.has(n.id)){ byId.set(n.id,{...byId.get(n.id),...n}); count++; } else if(n.name && byName.has(n.name.toLowerCase())){ const e=byName.get(n.name.toLowerCase()); byId.set(e.id,{...e,...n,id:e.id}); count++; } else { const id=`A-${String(byId.size+1).padStart(3,'0')}`; byId.set(id,{...n,id}); count++; } }); setHives(Array.from(byId.values())); setImportMsg(`Imported/merged ${count} apiaries from CSV.`); } else if(has('boxes')||has('supers')||has('feeders')||has('syrupl')){ const first=rows[0]||{}; const patch={ boxes:toInt(first.boxes), supers:toInt(first.supers), feeders:toInt(first.feeders), syrupL:toInt(first.syrupl||first.syrupL) }; setInventory(prev=>({ ...prev, ...patch })); setImportMsg('Inventory updated from CSV.'); } else { setImportMsg('Unknown CSV format. Expected Apiaries, Tasks, or Inventory columns.'); } } catch { setImportMsg('Import failed: invalid CSV'); } finally { if(csvFileRef.current) csvFileRef.current.value=''; } }
 
   // Runtime sanity tests
-  useEffect(()=>{ const tests=[]; tests.push({name:'Stat component exists', pass:typeof Stat==='function'}); tests.push({name:'hives is array', pass:Array.isArray(hives)}); tests.push({name:'toInt nullish->0', pass:toInt(undefined)===0 && toInt(null)===0}); tests.push({name:'toInt parses 1234', pass:toInt('1234')===1234}); const v1=validateApiary({name:'',numHives:1,singleHives:0,doubleHives:0}); tests.push({name:'validate: name required', pass:!v1.valid && !!v1.errors.name}); const v2=validateApiary({name:'X',numHives:0,singleHives:0,doubleHives:0}); tests.push({name:'validate: numHives≥0', pass:v2.valid}); const v2b=validateApiary({name:'X',numHives:0,singleHives:1,doubleHives:0}); tests.push({name:'validate: singles fit total', pass:!v2b.valid}); const v3=validateApiary({name:'Y',numHives:2,singleHives:2,doubleHives:1}); tests.push({name:'validate: singles+doubles ≤ total', pass:!v3.valid}); tests.push({name:'fmtDMY 2025-09-05', pass:fmtDMY('2025-09-05')==='05/09/2025'}); tests.push({name:'daysInMonth Feb/2024=29', pass:daysInMonth(2024,2)===29}); const _iso=ymdToISO(2025,9,6), _ymd=isoToYMD(_iso); tests.push({name:'ymd<->iso', pass:_iso==='2025-09-06' && _ymd.y===2025 && _ymd.m===9 && _ymd.d===6}); tests.push({name:'inventory keys ok', pass:['boxes','supers','feeders','syrupL'].every(k=>Object.prototype.hasOwnProperty.call(inventory,k))}); tests.push({name:'CSV roundtrip small', pass:(()=>{ const rows=[{a:1,b:'x,y'},{a:2,b:'"q"'}]; const csv=toCSV(rows); const back=parseCSV(csv); return Array.isArray(back)&&back.length===2; })()}); console.table(tests); }, []);
+  useEffect(()=>{ const tests=[]; tests.push({name:'Stat component exists', pass:typeof Stat==='function'}); tests.push({name:'hives is array', pass:Array.isArray(hives)}); tests.push({name:'toInt nullish->0', pass:toInt(undefined)===0 && toInt(null)===0}); tests.push({name:'toInt parses 1234', pass:toInt('1234')===1234}); const v1=validateApiary({name:'',numHives:1,singleHives:0,doubleHives:0}); tests.push({name:'validate: name required', pass:!v1.valid && !!v1.errors.name}); const v2=validateApiary({name:'X',numHives:0,singleHives:0,doubleHives:0}); tests.push({name:'validate: numHives≥0', pass:v2.valid}); const v2b=validateApiary({name:'X',numHives:0,singleHives:1,doubleHives:0}); tests.push({name:'validate: singles fit total', pass:!v2b.valid}); const v3=validateApiary({name:'Y',numHives:2,singleHives:2,doubleHives:1}); tests.push({name:'validate: singles+doubles ≤ total', pass:!v3.valid}); const calcTotal = (s,d,n)=> toInt(s)+toInt(d)+toInt(n); tests.push({name:'calc total 1+2+3=6', pass:calcTotal(1,2,3)===6}); tests.push({name:'fmtDMY 2025-09-05', pass:fmtDMY('2025-09-05')==='05/09/2025'}); tests.push({name:'daysInMonth Feb/2024=29', pass:daysInMonth(2024,2)===29}); const _iso=ymdToISO(2025,9,6), _ymd=isoToYMD(_iso); tests.push({name:'ymd<->iso', pass:_iso==='2025-09-06' && _ymd.y===2025 && _ymd.m===9 && _ymd.d===6}); tests.push({name:'inventory keys ok', pass:['boxes','supers','feeders','syrupL'].every(k=>Object.prototype.hasOwnProperty.call(inventory,k))}); tests.push({name:'CSV roundtrip small', pass:(()=>{ const rows=[{a:1,b:'x,y'},{a:2,b:'"q"'}]; const csv=toCSV(rows); const back=parseCSV(csv); return Array.isArray(back)&&back.length===2; })()}); tests.push({name:'queenless ≤ total', pass:validateApiary({name:'Q',numHives:5,queenlessHives:6}).valid===false}); tests.push({name:'fmtDMY passthrough invalid', pass:fmtDMY('oops')==='oops'}); console.table(tests); }, []);
 
   // ------------------- Dashboard
   function Dashboard(){
@@ -313,34 +312,176 @@ function BeekeepingApp(){
 
   // ------------------- Modals (Add/Edit Apiary)
   function FieldError({ msg }){ return msg ? <div className="text-xs text-red-300 mt-0.5">{msg}</div> : null; }
-  function NewApiaryModal(){ const [form,setForm]=useState({ name:"", strength:"Moderate", numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, notes:"" }); const { valid, errors }=validateApiary(form); if(!showNewHive) return null; return (<div className="fixed inset-0 bg-black/70 grid place-items-center p-4"><div className="w-full max-w-lg rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4"><div className="text-yellow-200 font-semibold mb-2">Add Apiary</div><div className="grid grid-cols-2 gap-2"><label className="col-span-2 text-sm">Name<Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} /><FieldError msg={errors.name} /></label><label className="text-sm">Queenless Hives<Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} /><FieldError msg={errors.queenlessHives} /></label><label className="text-sm">Strength<select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100"><option>Weak</option><option>Moderate</option><option>Strong</option></select></label><label className="text-sm col-span-2">Number of Hives<Input type="number" min={0} value={form.numHives} onChange={(e)=>setForm({ ...form, numHives: toInt(e.target.value) })} /><FieldError msg={errors.numHives} /></label><label className="text-sm">Single Hives<Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} /><FieldError msg={errors.singleHives} /></label><label className="text-sm">Double Hives<Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} /><FieldError msg={errors.doubleHives} /></label><label className="text-sm">Nucs<Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} /></label><label className="col-span-2 text-sm">Notes<Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} /></label></div><div className="flex justify-end gap-2 mt-3"><Button variant="outline" onClick={()=>setShowNewHive(false)}>Cancel</Button><Button disabled={!valid} onClick={()=>{ addHive(form); setShowNewHive(false); }}>Create Apiary</Button></div></div></div>); }
-  function EditApiaryModal(){ const h=editing; const [form,setForm]=useState(()=> (h ? { nucs:0, queenlessHives:0, ...h } : null)); const [errs,setErrs]=useState({}); useEffect(()=>{ if(editing){ setForm({ ...editing }); setErrs({}); } }, [editing]); if(!h || !form) return null; const handleSave=()=>{ const { valid, errors, values }=validateApiary(form); setErrs(errors); if(!valid) return; updateHive(h.id,{ ...values, lastInspection: todayISO() }); setEditing(null); }; const { valid }=validateApiary(form); return (<div className="fixed inset-0 bg-black/70 grid place-items-center p-4"><div className="w-full max-w-xl rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4"><div className="text-yellow-200 font-semibold mb-2">Edit {h.name}</div><div className="grid grid-cols-2 gap-2"><label className="col-span-2 text-sm">Name<Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} /><FieldError msg={errs.name} /></label><label className="text-sm">Queenless Hives<Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} /><FieldError msg={errs.queenlessHives} /></label><label className="text-sm">Strength<select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100"><option>Weak</option><option>Moderate</option><option>Strong</option></select></label><label className="text-sm col-span-2">Number of Hives<Input type="number" min={0} value={form.numHives} onChange={(e)=>setForm({ ...form, numHives: toInt(e.target.value) })} /><FieldError msg={errs.numHives} /></label><label className="text-sm">Single Hives<Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} /><FieldError msg={errs.singleHives} /></label><label className="text-sm">Double Hives<Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} /><FieldError msg={errs.doubleHives} /></label><label className="text-sm">Nucs<Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} /></label><label className="col-span-2 text-sm">Notes<Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} /></label></div><div className="flex justify-end gap-2 mt-3"><Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button><Button onClick={handleSave} disabled={!valid}>Save</Button></div></div></div>); }
-
-  // ------------------- Render
-  return (
-    <div className="p-6 text-yellow-200">
-      <div className="flex items-center justify-between mb-4">
-        <div className="inline-flex gap-2">{['dashboard','apiaries','settings'].map(k => (<button key={k} onClick={()=>setTab(k)} className={`px-3 py-2 rounded-xl ${tab===k? 'bg-yellow-500 text-black':'bg-black/40'}`}>{k[0].toUpperCase()+k.slice(1)}</button>))}</div>
-        <div className="flex items-center gap-2">
-          <input type="file" accept="application/json" ref={jsonFileRef} onChange={doImport} className="hidden" />
-          <input type="file" accept=".csv,text/csv" ref={csvFileRef} onChange={doImportCSV} className="hidden" />
-          <Button variant="outline" onClick={()=>jsonFileRef.current?.click()}>Import (JSON)</Button>
-          <Button variant="outline" onClick={()=>csvFileRef.current?.click()}>Import (CSV)</Button>
-          <Button onClick={doExport}>Export (JSON)</Button>
-          <Button onClick={doExportCSV}>Export (CSV)</Button>
+  function NewApiaryModal(){
+    const [form,setForm]=useState({ name:"", strength:"Moderate", numHives:0, singleHives:0, doubleHives:0, queenlessHives:0, nucs:0, notes:"" });
+    const { valid, errors }=validateApiary(form);
+    if(!showNewHive) return null;
+    return (
+      <div className="fixed inset-0 bg-black/70 grid place-items-center p-4">
+        <div className="w-full max-w-lg rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4">
+          <div className="text-yellow-200 font-semibold mb-2">Add Apiary</div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="col-span-2 text-sm">Name
+              <Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} />
+              <FieldError msg={errors.name} />
+            </label>
+            <label className="text-sm">Queenless Hives
+              <Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} />
+              <FieldError msg={errors.queenlessHives} />
+            </label>
+            <label className="text-sm">Strength
+              <select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100">
+                <option>Weak</option>
+                <option>Moderate</option>
+                <option>Strong</option>
+              </select>
+            </label>
+            <label className="text-sm col-span-2">Number of Hives
+              <Input type="number" min={0} value={form.numHives} onChange={(e)=>setForm({ ...form, numHives: toInt(e.target.value) })} />
+              <FieldError msg={errors.numHives} />
+            </label>
+            <label className="text-sm">Single Hives
+              <Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} />
+              <FieldError msg={errors.singleHives} />
+            </label>
+            <label className="text-sm">Double Hives
+              <Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} />
+              <FieldError msg={errors.doubleHives} />
+            </label>
+            <label className="text-sm">Nucs
+              <Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} />
+            </label>
+            <label className="col-span-2 text-sm">Notes
+              <Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} />
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 mt-3">
+            <Button variant="outline" onClick={()=>setShowNewHive(false)}>Cancel</Button>
+            <Button disabled={!valid} onClick={()=>{ addHive(form); setShowNewHive(false); }}>Create Apiary</Button>
+          </div>
         </div>
       </div>
-      {importMsg && <div className="mb-3 text-xs opacity-80">{importMsg}</div>}
-      {tab==='dashboard' && <Dashboard />}
-      {tab==='apiaries' && <Apiaries />}
-      {tab==='settings' && (
-        <Card><CardHeader><CardTitle>Settings</CardTitle></CardHeader><CardContent className="text-sm opacity-80">No extra settings yet.</CardContent></Card>
-      )}
+    );
+  }
+
+  function EditApiaryModal(){
+    const h=editing;
+    const [form,setForm]=useState(() => (h ? { nucs:0, queenlessHives:0, ...h } : null));
+    const [errs,setErrs]=useState({});
+
+    // keep form in sync with currently edited apiary
+    useEffect(()=>{ if(editing){ setForm({ ...editing }); setErrs({}); } }, [editing]);
+
+    // auto-calc total: Number of Hives = Single + Double + Nucs
+    const s = form?.singleHives, d = form?.doubleHives, n = form?.nucs;
+    useEffect(()=>{
+      if(!form) return;
+      const total = toInt(s) + toInt(d) + toInt(n);
+      if(form.numHives !== total) setForm(prev=>({ ...prev, numHives: total }));
+    }, [s,d,n]);
+
+    if(!h || !form) return null;
+
+    const handleSave=()=>{
+      const computedTotal = toInt(form.singleHives) + toInt(form.doubleHives) + toInt(form.nucs);
+      const next = { ...form, numHives: computedTotal };
+      const { valid, errors, values }=validateApiary(next);
+      setErrs(errors);
+      if(!valid) return;
+      updateHive(h.id,{ ...values, lastInspection: todayISO() });
+      setEditing(null);
+    };
+    const { valid }=validateApiary(form);
+
+    return (
+      <div className="fixed inset-0 bg-black/70 grid place-items-center p-4">
+        <div className="w-full max-w-xl rounded-2xl border border-yellow-500/30 bg-black text-yellow-100 p-4">
+          <div className="text-yellow-200 font-semibold mb-2">Edit {h.name}</div>
+          {/* vertical layout */}
+          <div className="grid grid-cols-1 gap-2">
+            <label className="text-sm">Name
+              <Input value={form.name} onChange={(e)=>setForm({ ...form, name:e.target.value })} />
+              <FieldError msg={errs.name} />
+            </label>
+
+            <label className="text-sm">Queenless Hives
+              <Input type="number" min={0} value={form.queenlessHives} onChange={(e)=>setForm({ ...form, queenlessHives: toInt(e.target.value) })} />
+              <FieldError msg={errs.queenlessHives} />
+            </label>
+
+            <label className="text-sm">Strength
+              <select value={form.strength} onChange={(e)=>setForm({ ...form, strength:e.target.value })} className="w-full px-3 py-2 rounded-xl bg-black/40 border border-yellow-500/30 text-yellow-100">
+                <option>Weak</option>
+                <option>Moderate</option>
+                <option>Strong</option>
+              </select>
+            </label>
+
+            <label className="text-sm">Single Hives
+              <Input type="number" min={0} value={form.singleHives} onChange={(e)=>setForm({ ...form, singleHives: toInt(e.target.value) })} />
+              <FieldError msg={errs.singleHives} />
+            </label>
+
+            <label className="text-sm">Double Hives
+              <Input type="number" min={0} value={form.doubleHives} onChange={(e)=>setForm({ ...form, doubleHives: toInt(e.target.value) })} />
+              <FieldError msg={errs.doubleHives} />
+            </label>
+
+            <label className="text-sm">Nucs
+              <Input type="number" min={0} value={form.nucs} onChange={(e)=>setForm({ ...form, nucs: toInt(e.target.value) })} />
+            </label>
+
+            {/* Readonly, auto-calculated */}
+            <label className="text-sm">Number of Hives (auto)
+              <Input type="number" value={form.numHives} readOnly className="opacity-70 cursor-not-allowed" />
+              <FieldError msg={errs.numHives} />
+            </label>
+
+            <label className="text-sm">Notes
+              <Textarea value={form.notes} onChange={(e)=>setForm({ ...form, notes:e.target.value })} />
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-3">
+            <Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!valid}>Save</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ------------------- Header / Navigation
+  function HeaderBar(){
+    return (
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="text-xl font-semibold text-yellow-300">Beekeeping App</div>
+          <div className="hidden sm:flex items-center gap-2 ml-4">
+            <Button variant={tab==='dashboard'?'solid':'outline'} onClick={()=>setTab('dashboard')}>Dashboard</Button>
+            <Button variant={tab==='apiaries'?'solid':'outline'} onClick={()=>setTab('apiaries')}>Apiaries</Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={doExport}>Export JSON</Button>
+          <input ref={jsonFileRef} type="file" accept="application/json" onChange={doImport} className="hidden" />
+          <Button variant="outline" onClick={()=>jsonFileRef.current?.click()}>Import JSON</Button>
+          <Button variant="outline" onClick={doExportCSV}>Export CSV</Button>
+          <input ref={csvFileRef} type="file" accept="text/csv,.csv" onChange={doImportCSV} className="hidden" />
+          <Button variant="outline" onClick={()=>csvFileRef.current?.click()}>Import CSV</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl p-4 text-yellow-200">
+      <HeaderBar />
+      {importMsg && <div className="mb-3 text-xs text-yellow-100/80">{importMsg}</div>}
+      {tab==='dashboard' ? <Dashboard /> : <Apiaries />}
       <NewApiaryModal />
       <EditApiaryModal />
     </div>
   );
 }
 
-// Make it globally visible for index.html mount script
-if (typeof window !== 'undefined') { window.BeekeepingApp = BeekeepingApp; }
