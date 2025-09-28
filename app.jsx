@@ -1,39 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 
-/**
- * Beekeeping App — Yellow & Black (Previewable)
- * -------------------------------------------------
- * Single-file React app (no external UI/icon deps).
- *
- * Highlights:
- * - Dashboard: Total Hives, Singles, Doubles, Nucs, Queenless Hives, To Do count
- * - Inventory: inline editing (multi-digit), +/- controls
- * - Tasks: To Do list sorted by date; double-click title to edit; custom calendar popover
- * - Apiaries: searchable vertical list with checkboxes + confirm delete; detail view
- * - Add/Edit Apiary modals; Last Update shown (dd/mm/yyyy)
- * - JSON & CSV Import/Export with merge/dedupe protection
- * - LocalStorage persistence; runtime sanity tests (console.table)
- */
-
-// ================================================================ Helpers
-const todayISO = () => new Date().toISOString().slice(0, 10);
-const addDays = (iso, days) => { const d = iso ? new Date(iso) : new Date(); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); };
-function toInt(v) { const n = parseInt(String((v ?? 0)), 10); return Number.isFinite(n) && n >= 0 ? n : 0; }
-function fmtDMY(iso) { if (!iso) return ""; const [y,m,d] = String(iso).split("T")[0].split("-"); if(!y||!m||!d) return String(iso); return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`; }
-function isoToYMD(iso){ if(!iso) return {}; const [y,m,d]=String(iso).split("T")[0].split("-").map(n=>parseInt(n,10)); return {y,m,d}; }
-function ymdToISO(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
-function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
-function monthName(m){ return ["January","February","March","April","May","June","July","August","September","October","November","December"][m-1]; }
-function validateApiary(form){
-  const errors = {};
-  const name=(form.name||"").trim();
-  const numHives=toInt(form.numHives);
-  const singleHives=toInt(form.singleHives);
-  const doubleHives=toInt(form.doubleHives);
-  const queenlessHives=toInt(form.queenlessHives);
-  const nucs=toInt(form.nucs);
-  if(!name) errors.name="Name is required.";
-  if(numHives<0) errors.numHives="Enter a total number 0 or greater.";
   if(singleHives>numHives) errors.singleHives="Single hives cannot exceed total.";
   if(doubleHives>numHives) errors.doubleHives="Double hives cannot exceed total.";
   if(singleHives+doubleHives>numHives) errors.doubleHives="Single + Double cannot exceed total.";
