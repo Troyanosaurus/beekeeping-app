@@ -1,3 +1,6 @@
+/* global React, ReactDOM */
+const { useState, useEffect, useMemo, useRef } = React;
+
 // ------------------------------ CSV helpers
 function escapeCSV(v){ const s=String(v??''); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
 function toCSV(rows){ const arr=Array.isArray(rows)?rows:[]; if(arr.length===0) return ''; const headers=Object.keys(arr[0]); const head=headers.map(escapeCSV).join(','); const lines=arr.map(r=>headers.map(h=>escapeCSV(r[h])).join(',')); return [head,...lines].join('\n'); }
