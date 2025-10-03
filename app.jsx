@@ -1,43 +1,73 @@
-/* global React, ReactDOM */
-const { useState, useEffect, useMemo, useRef } = React;
-
-  if(singleHives>numHives) errors.singleHives="Single hives cannot exceed total.";
-  if(doubleHives>numHives) errors.doubleHives="Double hives cannot exceed total.";
-  if(singleHives+doubleHives>numHives) errors.doubleHives="Single + Double cannot exceed total.";
-  if(queenlessHives>numHives) errors.queenlessHives="Queenless hives cannot exceed total.";
-  return { valid:Object.keys(errors).length===0, errors, values:{...form, name, numHives, singleHives, doubleHives, queenlessHives, nucs} };
-}
-
-// ------------------------------ Safe localStorage
-const safeStorage = { get(key, fb){ try{ const raw=window?.localStorage?.getItem(key); return raw? JSON.parse(raw): fb; } catch { return fb; } }, set(key,val){ try{ window?.localStorage?.setItem(key, JSON.stringify(val)); } catch {} } };
-
-// ------------------------------ Download & File IO
-function downloadJSON(data, filename='beekeeping-backup.json'){ try{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);}catch{}}
-function readFileAsText(file){ return new Promise((resolve,reject)=>{ const fr=new FileReader(); fr.onerror=()=>reject(new Error('Failed to read file')); fr.onload=()=>resolve(String(fr.result||'')); fr.readAsText(file); }); }
-
 // ------------------------------ CSV helpers
 function escapeCSV(v){ const s=String(v??''); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
 function toCSV(rows){ const arr=Array.isArray(rows)?rows:[]; if(arr.length===0) return ''; const headers=Object.keys(arr[0]); const head=headers.map(escapeCSV).join(','); const lines=arr.map(r=>headers.map(h=>escapeCSV(r[h])).join(',')); return [head,...lines].join('\n'); }
 function downloadCSV(rows, filename='data.csv'){ try{ const csv=toCSV(rows); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);}catch{}}
-function parseCSV(text){ const s=String(text||'').replace(/^\uFEFF/,''); const rows=[]; let row=[]; let field=''; let inQuotes=false; for(let i=0;i<s.length;i++){ const c=s[i]; if(inQuotes){ if(c==='"'){ if(s[i+1]==='"'){ field+='"'; i++; } else { inQuotes=false; } } else { field+=c; } } else { if(c==='"'){ inQuotes=true; } else if(c===','){ row.push(field); field=''; } else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; } else if(c==='\r'){ /* skip */ } else { field+=c; } } } if(field!==''||row.length>0){ row.push(field); rows.push(row); } if(rows.length===0) return []; const header=rows[0].map(h=>String(h||'').trim()); return rows.slice(1).filter(r=>r.some(x=>String(x).trim().length)).map(r=>{ const obj={}; header.forEach((h,i)=>{ obj[h]=r[i]??''; }); return obj; }); }
+function parseCSV(text){
+  const s=String(text||'').replace(/^\uFEFF/,''); // strip BOM
+  const rows=[]; let row=[]; let field=''; let inQuotes=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(inQuotes){
+      if(c==='"'){ if(s[i+1]==='"'){ field+='"'; i++; } else { inQuotes=false; } }
+      else { field+=c; }
+    } else {
+      if(c==='"'){ inQuotes=true; }
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ /* ignore */ }
+      else { field+=c; }
+    }
+  }
+  if(field!==''||row.length>0){ row.push(field); rows.push(row); }
+  if(rows.length===0) return [];
+  const header=rows[0].map(h=>String(h||'').trim());
+  return rows.slice(1)
+    .filter(r=>r.some(x=>String(x).trim().length))
+    .map(r=>{ const obj={}; header.forEach((h,i)=>{ obj[h]=r[i]??''; }); return obj; });
+}
 
 // ------------------------------ Coercion
-const coerceApiary = (a)=>({ id:String(a?.id||`A-${Math.random().toString(36).slice(2,7)}`), name:String(a?.name||''), queenStatus:String(a?.queenStatus||'Laying'), strength:String(a?.strength||'Moderate'), numHives:toInt(a?.numHives), singleHives:toInt(a?.singleHives), doubleHives:toInt(a?.doubleHives), queenlessHives:toInt(a?.queenlessHives), nucs:toInt(a?.nucs), notes:String(a?.notes||''), lastInspection:(a?.lastInspection && String(a.lastInspection)) || todayISO() });
-const coerceTask = (t)=>({ id:String(t?.id||`T-${Math.random().toString(36).slice(2,7)}`), title:String(t?.title||''), hiveId:String(t?.hiveId||''), due:(t?.due && String(t.due))||todayISO(), status:(t?.status==='Done' ? 'Done':'To Do'), priority:(['Low','Medium','High'].includes(String(t?.priority)) ? String(t.priority) : 'Medium') });
-const coerceInventory = (inv)=>({ supers:toInt(inv?.supers), boxes:toInt(inv?.boxes), feeders:toInt(inv?.feeders), syrupL:toInt(inv?.syrupL) });
+const coerceApiary = (a)=>({
+  id: String(a?.id || `A-${Math.random().toString(36).slice(2,7)}`),
+  name: String(a?.name || ''),
+  queenStatus: String(a?.queenStatus || 'Laying'),
+  strength: String(a?.strength || 'Moderate'),
+  numHives: toInt(a?.numHives),
+  singleHives: toInt(a?.singleHives),
+  doubleHives: toInt(a?.doubleHives),
+  queenlessHives: toInt(a?.queenlessHives),
+  nucs: toInt(a?.nucs),
+  notes: String(a?.notes || ''),
+  lastInspection: (a?.lastInspection && String(a.lastInspection)) || todayISO()
+});
+const coerceTask = (t)=>({
+  id: String(t?.id || `T-${Math.random().toString(36).slice(2,7)}`),
+  title: String(t?.title || ''),
+  hiveId: String(t?.hiveId || ''),
+  due: (t?.due && String(t.due)) || todayISO(),
+  status: (t?.status === 'Done' ? 'Done' : 'To Do'),
+  priority: (['Low','Medium','High'].includes(String(t?.priority)) ? String(t.priority) : 'Medium')
+});
+const coerceInventory = (inv)=>({
+  supers: toInt(inv?.supers),
+  boxes: toInt(inv?.boxes),
+  feeders: toInt(inv?.feeders),
+  syrupL: toInt(inv?.syrupL)
+});
 
 // --------------------------------------------------------------- Seed Data
-const seedHives=[
-  { id:"A-001", name:"Sunflower-1", queenStatus:"Laying", strength:"Strong",   numHives:5, singleHives:3, doubleHives:2, queenlessHives:0, nucs:0, lastInspection:"2025-08-19" },
+const seedHives = [
+  { id:"A-001", name:"Sunflower-1", queenStatus:"Laying",    strength:"Strong",   numHives:5, singleHives:3, doubleHives:2, queenlessHives:0, nucs:0, lastInspection:"2025-08-19" },
   { id:"A-002", name:"Clover-2",    queenStatus:"Queenless", strength:"Weak",     numHives:2, singleHives:2, doubleHives:0, queenlessHives:2, nucs:0, lastInspection:"2025-08-28" },
-  { id:"A-003", name:"Acacia-3",     queenStatus:"Laying",    strength:"Moderate", numHives:4, singleHives:1, doubleHives:3, queenlessHives:0, nucs:0, lastInspection:"2025-08-23" },
+  { id:"A-003", name:"Acacia-3",    queenStatus:"Laying",    strength:"Moderate", numHives:4, singleHives:1, doubleHives:3, queenlessHives:0, nucs:0, lastInspection:"2025-08-23" },
 ];
-const seedTasks=[
+const seedTasks = [
   { id:"T-001", title:"Oxalic vapor treatment", hiveId:"A-003", due:todayISO(), status:"To Do", priority:"High" },
   { id:"T-002", title:"Add equipment",          hiveId:"A-001", due:todayISO(), status:"To Do", priority:"Medium" },
-  { id:"T-003", title:"Introduce queen",         hiveId:"A-002", due:todayISO(), status:"To Do", priority:"High" },
+  { id:"T-003", title:"Introduce queen",        hiveId:"A-002", due:todayISO(), status:"To Do", priority:"High" },
 ];
-const seedInventory={ supers:12, boxes:120, feeders:6, syrupL:30 };
+const seedInventory = { supers:12, boxes:120, feeders:6, syrupL:30 };
+
 
 // --------------------------------------------------------------- UI Primitives
 function Card({ children, className="" }){ return <div className={`rounded-2xl border border-yellow-500/20 bg-black/40 ${className}`}>{children}</div>; }
@@ -449,6 +479,8 @@ export default function BeekeepingApp(){
       <NewApiaryModal />
       <EditApiaryModal />
     </div>
-  );
-}
+   );
+ }
++// Expose for UMD loader in index.html
++window.BeekeepingApp = BeekeepingApp;
 
