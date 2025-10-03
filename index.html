@@ -17,6 +17,13 @@
     <!-- Tailwind (Play CDN) so the utility classes work -->
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
+  <script>
+  if ('serviceWorker' in navigator) {
+    // Use your GitHub Pages subpath so scope is correct
+    navigator.serviceWorker.register('/beekeeping-app/sw.js').catch(() => {});
+  }
+</script>
+
   <body class="min-h-screen bg-black text-yellow-200">
     <div class="mx-auto max-w-6xl p-4">
       <header class="flex items-center justify-between mb-4">
@@ -453,11 +460,7 @@
         root.render(React.createElement(window.BeekeepingApp));
       } catch (e) { showErr(e); }
     </script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  }
-</script>
+    
 
   </body>
 </html>
