@@ -1,3 +1,5 @@
+/* global React, ReactDOM */
+const { useState, useEffect, useMemo, useRef } = React;
 
   if(singleHives>numHives) errors.singleHives="Single hives cannot exceed total.";
   if(doubleHives>numHives) errors.doubleHives="Double hives cannot exceed total.";
